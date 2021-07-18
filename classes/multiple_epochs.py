@@ -17,6 +17,7 @@ class multiple_epochs_cl:
         # -- bubble sorting --
         self.__kukle_sort()
 
+    # -- private methoods --
     def __read_multiple_epochs(self, list_of_files):
         # iterating in a list_of_files 
         try:

@@ -35,7 +35,7 @@ class maser_spots:
         # -- Reading the spots file --
         self.__read_spots_file(filename)
 
-    
+    # -- private --
     def __read_spots_file(self, filename): # __ means it is PRIVATE
         # -- reading the spots file --
         tmp = loadtxt(filename) # not "SELF" 'cause it is not needed afterwards
