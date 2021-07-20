@@ -5,7 +5,7 @@
 import sys
 from numpy import loadtxt
 from os import walk
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide2 import QtCore, QtWidgets, QtGui
 
 # -- adding directories to path --
 sys.path.append('./classes')
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
     widget = my_window_cl(dw.epochs)
-    widget.resize(800,600)
+    widget.resize(1366,720)
     widget.show()
 
-    sys.exit(app.exec())
+    sys.exit(app.exec_())
