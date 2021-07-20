@@ -38,3 +38,12 @@ class multiple_epochs_cl:
                     epochs_sorted[j], epochs_sorted[j+1] = epochs_sorted[j+1], epochs_sorted[j]
 
         self.epochs = epochs_sorted
+    
+    def search_by_proj_code(self, projcode):
+        # -- searches for the project with proper project code --
+        for i in range(len(self.epochs)):
+            if self.epochs[i].project_code == projcode:
+                return i
+        
+        # -- returning -1 if found s**t --
+        return -1

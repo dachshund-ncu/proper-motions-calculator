@@ -32,7 +32,7 @@ for i in dw.epochs:
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
-    widget = my_window_cl(dw.epochs)
+    widget = my_window_cl(dw)
     widget.resize(1366,720)
     widget.show()
 
