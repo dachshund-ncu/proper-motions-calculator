@@ -79,6 +79,9 @@ class mplSpotCanvas(FigureCanvasQTAgg):
     
     # -- methood - show beam where clicked --
     def onclick(self, event):
-        x,y = event.xdata, event.ydata
-        self.beam_ellipse.set_center([x,y])
-        self.fig.canvas.draw_idle()
+            x,y = event.xdata, event.ydata
+            if x == None or y == None:
+                print("----> Tried to draw beam outside plot. Fortunately nothing happened")
+                return
+            self.beam_ellipse.set_center([x,y])
+            self.fig.canvas.draw_idle()

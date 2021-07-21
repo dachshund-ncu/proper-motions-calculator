@@ -77,12 +77,35 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.spot_map_widget_layout.addWidget(self.toolbar_to_spot_canvas)
         self.spot_map_widget_layout.addWidget(self.spot_canvas)
         # ------------------------------
+        
+        # ---- setting up diffrent sections ----
+        self.__set_up_basic_buttons()
+        self.__set_cloudet_part_widget()
+
+        # ----- adding widgets to the grid -----
+        self.layout.addWidget(self.buttons_gb, 0, 0)
+        self.layout.addWidget(self.cloudet_bar_gb, 0, 1, 1, 1)
+        self.layout.addWidget(self.list_of_cloudets_gb, 1, 1, 1, 1)
+        self.layout.addWidget(self.ramka, 1, 0)
+        self.layout.addWidget(self.spot_map_widget, 0, 2, 2, 1)
+
+        # -- setting column stretch --
+        self.layout.setColumnStretch(0,1)
+        self.layout.setColumnStretch(1,1)
+        self.layout.setColumnStretch(2,3)
+
+        self.layout.setRowStretch(0,1)
+        self.layout.setRowStretch(1,1)
+
+    def __set_up_basic_buttons(self):
 
         # ------- BASIC BUTTONS ------
         # load data 
         self.load_button = QtWidgets.QPushButton("Load data files")
         self.reload_button = QtWidgets.QPushButton("Reload")
         self.properties_button = QtWidgets.QPushButton("Plot properties")
+        self.spot_plot_button = QtWidgets.QPushButton("Spot plot")
+        self.proper_motions = QtWidgets.QPushButton("Proper motions")
 
         # sizing
         self.load_button.setMaximumSize(10000, 10000)
@@ -91,6 +114,10 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.reload_button.setMinimumSize(0, 0)
         self.properties_button.setMaximumSize(10000, 10000)
         self.properties_button.setMinimumSize(0, 0)
+        self.spot_plot_button.setMaximumSize(10000, 10000)
+        self.spot_plot_button.setMinimumSize(0, 0)
+        self.proper_motions.setMaximumSize(10000, 10000)
+        self.proper_motions.setMinimumSize(0, 0)
 
         # group box
         self.buttons_gb = QtWidgets.QGroupBox("Actions")
@@ -101,8 +128,15 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.buttons_gb_layout.addWidget(self.load_button)
         self.buttons_gb_layout.addWidget(self.reload_button)
         self.buttons_gb_layout.addWidget(self.properties_button)
-        # -----------------------------
+        self.buttons_gb_layout.addWidget(self.spot_plot_button)
+        self.buttons_gb_layout.addWidget(self.proper_motions)
 
+        # setting down "spot_plot_button"
+        self.spot_plot_button.setDown(True)
+        # -----------------------------
+    
+    # -- setting cloudet part widgets --
+    def __set_cloudet_part_widget(self):
         # ------- CLOUDET PART WIDGET ------
         # groupbox
         self.cloudet_bar_gb = QtWidgets.QGroupBox("Data managing") # group box
@@ -141,24 +175,8 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.list_of_cloudets_gb_layout = QtWidgets.QVBoxLayout(self.list_of_cloudets_gb)
         self.list_of_cloudets = QtWidgets.QListWidget()
         self.list_of_cloudets_gb_layout.addWidget(self.list_of_cloudets)
-
         # -----------------------------
-
-        # ----- adding widgets to the grid -----
-        self.layout.addWidget(self.buttons_gb, 0, 0)
-        self.layout.addWidget(self.cloudet_bar_gb, 0, 1, 1, 1)
-        self.layout.addWidget(self.list_of_cloudets_gb, 1, 1, 1, 1)
-        self.layout.addWidget(self.ramka, 1, 0)
-        self.layout.addWidget(self.spot_map_widget, 0, 2, 2, 1)
-
-        # -- setting column stretch --
-        self.layout.setColumnStretch(0,1)
-        self.layout.setColumnStretch(1,1)
-        self.layout.setColumnStretch(2,3)
-
-        self.layout.setRowStretch(0,1)
-        self.layout.setRowStretch(1,1)
-
+    
     # -- connect widgets (buttons etc. to proper slots)
     def __connect_to_slots(self):
         self.connect(self.projects_list, QtCore.SIGNAL("itemClicked(QListWidgetItem*)"), self.__plot_on_list_click)
