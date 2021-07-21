@@ -22,10 +22,10 @@ files_in_dir = next( walk( spots_path ), ( None, None, [] ) ) [2]
 for i in range(len(files_in_dir)):
     files_in_dir[i] = spots_path + files_in_dir[i]
 
+
 # -- creating multiple epochs --
-dw = multiple_epochs_cl(files_in_dir)
-for i in dw.epochs:
-    print("Date:", i.time_string, "Code:", i.project_code, "PI:", i.project_pi)
+dw = multiple_epochs_cl()
+dw.read_multiple_epochs(files_in_dir)
 
 
 

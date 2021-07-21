@@ -2,10 +2,12 @@
 Simple class that holds main window for this app
 '''
 # -- importng important libraries --
+from classes.multiple_epochs import multiple_epochs_cl
 from PySide2 import QtCore, QtWidgets, QtGui
 from spot_plot_canvas import mplSpotCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+from os import getcwd
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -16,27 +18,27 @@ matplotlib.use('Qt5Agg')
 class my_window_cl(QtWidgets.QMainWindow):
     
     # -- init --
-    def __init__(self, list_of_epochs):
+    def __init__(self, list_of_epochs = "None"):
         super().__init__()
-
-        # -- for accesing data later --
-        self.epochlst = list_of_epochs.epochs
-        self.epochlst_obj = list_of_epochs
-
+        
         # -- declaring necessary widgets --
         self.__declare_necessary_widgets()
 
         # -- setting central widget -
         self.setCentralWidget(self.window)
+        
+        # -- connecting to slots --
+        self.__connect_to_slots()
+        
+        if list_of_epochs != "None":
+            # -- for accesing data later --
+            self.epochlst_obj = list_of_epochs
+            # -- filling project list --
+            self.__fill_list_of_projects(self.epochlst_obj.epochs)
+            # -- plotting --
+            self.plot_map_of_epoch(0)
 
-        # -- filling project list --
-        self.__fill_list_of_projects(self.epochlst)
-        # -- plotting --
-        self.plot_map_of_epoch(0)
-        #self.plot_map_of_epoch(1)
-        #self.plot_map_of_epoch(4)
-
-        self.connect(self.projects_list, QtCore.SIGNAL("itemClicked(QListWidgetItem*)"), self.__plot_on_list_click)
+        
 
     def __declare_necessary_widgets(self):
         # -- main widget --
@@ -110,6 +112,12 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.layout.setRowStretch(0,3)
         self.layout.setRowStretch(1,1)
 
+    # -- connect widgets (buttons etc. to proper slots)
+    def __connect_to_slots(self):
+        self.connect(self.projects_list, QtCore.SIGNAL("itemClicked(QListWidgetItem*)"), self.__plot_on_list_click)
+        self.reload_button.clicked.connect(self.reload_slot)
+        self.load_button.clicked.connect(self.load_slot)
+
     def __plot_on_list_click(self, item):
         # -- searching of the proper epoch --
         # -- by extracting project code --
@@ -119,13 +127,62 @@ class my_window_cl(QtWidgets.QMainWindow):
         index = self.epochlst_obj.search_by_proj_code(projcode)
 
         # -- putting it on the plot --
-        self.spot_canvas.spot_plotting_wrapper(self.epochlst[index].dRA, self.epochlst[index].dDEC, self.epochlst[index].velocity, self.epochlst[index].flux_density, label=projcode)
+        self.spot_canvas.spot_plotting_wrapper(self.epochlst_obj.epochs[index].dRA, self.epochlst_obj.epochs[index].dDEC, self.epochlst_obj.epochs[index].velocity, self.epochlst_obj.epochs[index].flux_density, label=projcode)
 
 
     def plot_map_of_epoch(self, index = 0):
-        self.spot_canvas.spot_plotting_wrapper(self.epochlst[index].dRA, self.epochlst[index].dDEC, self.epochlst[index].velocity, self.epochlst[index].flux_density, label=self.epochlst[index].project_code)
+        self.spot_canvas.spot_plotting_wrapper(self.epochlst_obj.epochs[index].dRA, self.epochlst_obj.epochs[index].dDEC, self.epochlst_obj.epochs[index].velocity, self.epochlst_obj.epochs[index].flux_density, label=self.epochlst_obj.epochs[index].project_code)
 
     # -- fills project list with proper data --
     def __fill_list_of_projects(self, list_of_projects):
             for i in list_of_projects:
                 self.projects_list.addItem(QtWidgets.QListWidgetItem(i.project_code + " Date: " + i.time_string + " PI: " + i.project_pi))
+    
+    # -- slot for reloading --
+    def reload_slot(self):
+        # clearing lists
+        self.epochlst_obj.epochs = [] # clearing list of "spot class" objects
+
+        # clearing widgets
+        self.projects_list.clear()
+
+        # loading data again
+        self.epochlst_obj.read_multiple_epochs(self.epochlst_obj.fileslst, reload=True)
+
+        # filling list widget
+        self.__fill_list_of_projects(self.epochlst_obj.epochs)
+
+        # plotting first epoch
+        self.plot_map_of_epoch(0)
+
+        # printing
+        print("----> Reloaded")
+    
+    def load_slot(self):
+
+        # enabling QFileDialog:
+        list_of_filenames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open file(s)", getcwd(), "All (*);;.DAT files (*.DAT *.dat)")
+        
+        # -- if "cancel" was clicked --
+        if len(list_of_filenames[0]) == 0:
+            return
+
+        # -- if files were chosen... --
+        # clearing the lists
+        try:
+            del self.epochlst_obj # if this was declared previously, no problem
+        except(AttributeError):
+            pass # but it could not, so we need to override this fact
+        
+        # clearing widget
+        self.projects_list.clear()
+
+        # reading chosen files
+        self.epochlst_obj = multiple_epochs_cl()
+        self.epochlst_obj.read_multiple_epochs(list_of_filenames[0])
+
+        # filling the widget 
+        self.__fill_list_of_projects(self.epochlst_obj.epochs)
+
+        # plotting spot map of the first epoch
+        self.plot_map_of_epoch(0)

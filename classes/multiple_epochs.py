@@ -7,38 +7,34 @@ from spot_class import maser_spots
 
 class multiple_epochs_cl:
 
-    def __init__(self, list_of_files):
+    def __init__(self):
         # -- list with "maser_spots" instances
         self.epochs = []
 
-        # -- loading --
-        self.__read_multiple_epochs(list_of_files)
 
-        # -- bubble sorting --
-        self.__kukle_sort()
 
-    # -- private methoods --
-    def __read_multiple_epochs(self, list_of_files):
-        # iterating in a list_of_files 
+    
+    def read_multiple_epochs(self, list_of_files, reload=False):
+        # iterating in a list_of_files
+        # we need to keep list of files
+        if reload == False:
+            self.fileslst = list_of_files
+
         try:
             for i in list_of_files:
                 self.epochs.append(maser_spots(i))
         except:
             print("ERROR")
-    
-    def __kukle_sort(self):
-        # -- temporary table, that will be holding sorted classes --
-        # -- we DO NOT want to change orginal "epochs" table until it is done --
-        epochs_sorted = self.epochs
+        
+        # -- bubble sorting --
+        self.epochs = self.__kukle_sort(self.epochs)
 
-        # -- main sorting loop --
-        for i in range(len(epochs_sorted) - 1):
-            for j in range(0, len(epochs_sorted) - i - 1):
-                if epochs_sorted[j].mjd > epochs_sorted[j+1].mjd:
-                    epochs_sorted[j], epochs_sorted[j+1] = epochs_sorted[j+1], epochs_sorted[j]
+        # -- printing message --
+        print("----------")
+        print("----> Loaded:")
+        for i in self.epochs:
+            print("----> Date:", i.time_string, "Code:", i.project_code, "PI:", i.project_pi)
 
-        self.epochs = epochs_sorted
-    
     def search_by_proj_code(self, projcode):
         # -- searches for the project with proper project code --
         for i in range(len(self.epochs)):
@@ -47,3 +43,16 @@ class multiple_epochs_cl:
         
         # -- returning -1 if found s**t --
         return -1
+
+    # -- private methoods --
+    def __kukle_sort(self, epochs_list):
+
+        # -- main sorting loop --
+        for i in range(len(epochs_list) - 1):
+            for j in range(0, len(epochs_list) - i - 1):
+                if epochs_list[j].mjd > epochs_list[j+1].mjd:
+                    epochs_list[j], epochs_list[j+1] = epochs_list[j+1], epochs_list[j]
+
+        return epochs_list
+
+    

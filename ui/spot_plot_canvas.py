@@ -45,6 +45,9 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         # - setting title -
         self.axes.set_title(label)
 
+        # - making x_axis inverse -
+        self.axes.invert_xaxis()
+
         # - redoing this nice plot -
         self.__make_nice_looking_plot()
         # - re-drawing figure -
