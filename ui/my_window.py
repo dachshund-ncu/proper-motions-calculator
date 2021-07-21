@@ -33,10 +33,13 @@ class my_window_cl(QtWidgets.QMainWindow):
         if list_of_epochs != "None":
             # -- for accesing data later --
             self.epochlst_obj = list_of_epochs
-            # -- filling project list --
-            self.__fill_list_of_projects(self.epochlst_obj.epochs)
-            # -- plotting --
-            self.plot_map_of_epoch(0)
+            if len(self.epochlst_obj.epochs) > 0:
+                # -- filling project list --
+                self.__fill_list_of_projects(self.epochlst_obj.epochs)
+                # -- plotting --
+                self.plot_map_of_epoch(0)
+                # -- index --
+                self.chosen_project_index = 0
 
         
 
@@ -100,16 +103,60 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.buttons_gb_layout.addWidget(self.properties_button)
         # -----------------------------
 
+        # ------- CLOUDET PART WIDGET ------
+        # groupbox
+        self.cloudet_bar_gb = QtWidgets.QGroupBox("Data managing") # group box
+        # layout
+        self.cloudet_bar_layout = QtWidgets.QVBoxLayout(self.cloudet_bar_gb) # layout of the grpup box
+
+        # checkboxes
+        self.show_cloudets = QtWidgets.QCheckBox("Show Cloudets")
+        self.show_spots = QtWidgets.QCheckBox("Show Spots")
+        self.show_beam = QtWidgets.QCheckBox("Show Beam")
+        self.show_mark_range = QtWidgets.QCheckBox("Show marked range")
+        self.show_channel_label = QtWidgets.QCheckBox("Show channel numbers")
+
+        # buttons
+        self.add_to_cloudets_button = QtWidgets.QPushButton("Add to saved cloudets")
+        self.remove_from_cloudets_button = QtWidgets.QPushButton("Remove from saved cloudets")
+        self.add_to_cloudets_button.setMaximumSize(10000, 10000)
+        self.add_to_cloudets_button.setMinimumSize(0, 0)
+        self.remove_from_cloudets_button.setMaximumSize(10000, 10000)
+        self.remove_from_cloudets_button.setMinimumSize(0, 0)
+
+        # add to gb layout
+        self.cloudet_bar_layout.addWidget(self.show_cloudets)
+        self.cloudet_bar_layout.addWidget(self.show_spots)
+        self.cloudet_bar_layout.addWidget(self.show_beam)
+        self.cloudet_bar_layout.addWidget(self.show_mark_range)
+        self.cloudet_bar_layout.addWidget(self.show_channel_label)
+        self.cloudet_bar_layout.addWidget(self.add_to_cloudets_button)
+        self.cloudet_bar_layout.addWidget(self.remove_from_cloudets_button)
+
+        # setting "show spots" to checked
+        self.show_spots.setChecked(True)
+
+        # list of cloudets 
+        self.list_of_cloudets_gb = QtWidgets.QGroupBox("Cloudets")
+        self.list_of_cloudets_gb_layout = QtWidgets.QVBoxLayout(self.list_of_cloudets_gb)
+        self.list_of_cloudets = QtWidgets.QListWidget()
+        self.list_of_cloudets_gb_layout.addWidget(self.list_of_cloudets)
+
+        # -----------------------------
+
         # ----- adding widgets to the grid -----
-        self.layout.addWidget(self.buttons_gb, 0,0)
+        self.layout.addWidget(self.buttons_gb, 0, 0)
+        self.layout.addWidget(self.cloudet_bar_gb, 0, 1, 1, 1)
+        self.layout.addWidget(self.list_of_cloudets_gb, 1, 1, 1, 1)
         self.layout.addWidget(self.ramka, 1, 0)
-        self.layout.addWidget(self.spot_map_widget, 0,1,2,1)
+        self.layout.addWidget(self.spot_map_widget, 0, 2, 2, 1)
 
         # -- setting column stretch --
         self.layout.setColumnStretch(0,1)
-        self.layout.setColumnStretch(1,3)
+        self.layout.setColumnStretch(1,1)
+        self.layout.setColumnStretch(2,3)
 
-        self.layout.setRowStretch(0,3)
+        self.layout.setRowStretch(0,1)
         self.layout.setRowStretch(1,1)
 
     # -- connect widgets (buttons etc. to proper slots)
@@ -117,6 +164,9 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.connect(self.projects_list, QtCore.SIGNAL("itemClicked(QListWidgetItem*)"), self.__plot_on_list_click)
         self.reload_button.clicked.connect(self.reload_slot)
         self.load_button.clicked.connect(self.load_slot)
+
+        self.show_beam.clicked.connect(self.beam_visible)
+        self.show_mark_range.clicked.connect(self.rectangle_visible)
 
     def __plot_on_list_click(self, item):
         # -- searching of the proper epoch --
@@ -129,9 +179,32 @@ class my_window_cl(QtWidgets.QMainWindow):
         # -- putting it on the plot --
         self.spot_canvas.spot_plotting_wrapper(self.epochlst_obj.epochs[index].dRA, self.epochlst_obj.epochs[index].dDEC, self.epochlst_obj.epochs[index].velocity, self.epochlst_obj.epochs[index].flux_density, label=projcode)
 
+        # -- setting global index number --
+        self.chosen_project_index = index
+
+        # -- setting beam width to new value --
+        self.spot_canvas.beam_ellipse.set_width(self.epochlst_obj.epochs[index].beam_size_ra)
+        self.spot_canvas.beam_ellipse.set_height(self.epochlst_obj.epochs[index].beam_size_dec)
+
+        # -- setting label on the group box --
+        self.list_of_cloudets_gb.setTitle("Cloudets of " + self.epochlst_obj.epochs[index].project_code)
 
     def plot_map_of_epoch(self, index = 0):
+        # -- failsafe, if there are no epochs loaded --
+        if len(self.epochlst_obj.epochs) == 0:
+            print("----> No maps loaded! Failed, trying to plot...")
+            return
         self.spot_canvas.spot_plotting_wrapper(self.epochlst_obj.epochs[index].dRA, self.epochlst_obj.epochs[index].dDEC, self.epochlst_obj.epochs[index].velocity, self.epochlst_obj.epochs[index].flux_density, label=self.epochlst_obj.epochs[index].project_code)
+
+        # -- setting beam width to new --
+        self.spot_canvas.beam_ellipse.set_width(self.epochlst_obj.epochs[index].beam_size_ra)
+        self.spot_canvas.beam_ellipse.set_height(self.epochlst_obj.epochs[index].beam_size_dec)
+
+        # -- setting label on the group box --
+        self.list_of_cloudets_gb.setTitle("Cloudets of " + self.epochlst_obj.epochs[index].project_code)
+
+        # -- setting this epoch marked --
+        self.projects_list.setCurrentRow(index)
 
     # -- fills project list with proper data --
     def __fill_list_of_projects(self, list_of_projects):
@@ -156,6 +229,7 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.plot_map_of_epoch(0)
 
         # printing
+        print("----------")
         print("----> Reloaded")
     
     def load_slot(self):
@@ -186,3 +260,17 @@ class my_window_cl(QtWidgets.QMainWindow):
 
         # plotting spot map of the first epoch
         self.plot_map_of_epoch(0)
+
+    def beam_visible(self):
+        if self.show_beam.isChecked() == False:
+            self.spot_canvas.beam_ellipse.set_visible(False)
+        else:
+            self.spot_canvas.beam_ellipse.set_visible(True)
+        self.spot_canvas.fig.canvas.draw_idle()
+
+    def rectangle_visible(self):
+        if self.show_mark_range.isChecked() == False:
+            self.spot_canvas.mark_rect.set_visible(False)
+        else:
+            self.spot_canvas.mark_rect.set_visible(True)
+        self.spot_canvas.fig.canvas.draw_idle()
