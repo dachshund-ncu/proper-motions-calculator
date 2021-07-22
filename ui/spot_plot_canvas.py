@@ -26,11 +26,12 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         self.beam_ellipse = Ellipse([0,0], 4.5, 4.5, angle=0.0, fc='None', ec='black', visible=False)
         # rectangle marker
         self.mark_rect = Rectangle([0,0], 30, 30, fc='grey', ec='black', visible=False)
-        
-        # -- connecting canvas to methods --
-        self.fig.canvas.mpl_connect('button_press_event', self.onclick)
 
         super(mplSpotCanvas, self).__init__(self.fig)
+
+        # -- connecting canvas to methods --
+        self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+        self.axes_cleared = True
 
 
     def spot_plotting_wrapper(self, x,y, vel, flux, label=""):
@@ -50,6 +51,7 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         p = plt.cm.ScalarMappable(cmap=plt.cm.jet)
         p.set_array(vel)
         self.fig.colorbar(p, ax=self.axes, cax=self.cbax)
+        self.cbax.set_ylim(vel.min(), vel.max())
         self.axes.grid()
 
         # - setting title -
@@ -67,6 +69,7 @@ class mplSpotCanvas(FigureCanvasQTAgg):
 
         # - re-drawing figure -
         self.fig.canvas.draw_idle()
+        self.axes_cleared = True
     
     def __make_nice_looking_plot(self):
         # -- ticks --
@@ -79,9 +82,25 @@ class mplSpotCanvas(FigureCanvasQTAgg):
     
     # -- methood - show beam where clicked --
     def onclick(self, event):
-            x,y = event.xdata, event.ydata
-            if x == None or y == None:
-                print("----> Tried to draw beam outside plot. Fortunately nothing happened")
-                return
-            self.beam_ellipse.set_center([x,y])
+        x,y = event.xdata, event.ydata
+        if x == None or y == None:
+            #print("----> Tried to draw beam outside plot. Fortunately nothing happened")
+            return
+        self.beam_ellipse.set_center([x,y])
+        self.fig.canvas.draw_idle()
+    
+    def plot_single_spot_filled(self, dx,dy,flux):
+        if self.axes_cleared == False:
+            flux2 = log(flux * 1000.0)
+            self.axes.set_xlim(self.axes.get_xlim())
+            self.axes.set_ylim(self.axes.get_ylim())
+            self.spot_marker_sc.set_offsets([dx,dy])
+            self.spot_marker_sc.set_sizes([flux2**2.0 * 5])
             self.fig.canvas.draw_idle()
+        else:
+            flux2 = log(flux * 1000.0)
+            self.axes.set_xlim(self.axes.get_xlim())
+            self.axes.set_ylim(self.axes.get_ylim())
+            self.spot_marker_sc = self.axes.scatter(dx,dy,c='black', s=(flux2)**2.0 * 5, alpha=0.5)
+            self.fig.canvas.draw_idle()
+            self.axes_cleared = False
