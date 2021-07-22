@@ -107,10 +107,13 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.properties_button = QtWidgets.QPushButton("Plot properties")
         self.spot_plot_button = QtWidgets.QPushButton("Spot plot")
         self.proper_motions = QtWidgets.QPushButton("Proper motions")
+        self.append_load_button = QtWidgets.QPushButton("Load files (append mode)")
 
         # sizing
         self.load_button.setMaximumSize(10000, 10000)
         self.load_button.setMinimumSize(0, 0)
+        self.append_load_button.setMaximumSize(10000, 10000)
+        self.append_load_button.setMinimumSize(0, 0)
         self.reload_button.setMaximumSize(10000, 10000)
         self.reload_button.setMinimumSize(0, 0)
         self.properties_button.setMaximumSize(10000, 10000)
@@ -127,6 +130,7 @@ class my_window_cl(QtWidgets.QMainWindow):
 
         # layout
         self.buttons_gb_layout.addWidget(self.load_button)
+        self.buttons_gb_layout.addWidget(self.append_load_button)
         self.buttons_gb_layout.addWidget(self.reload_button)
         self.buttons_gb_layout.addWidget(self.properties_button)
         self.buttons_gb_layout.addWidget(self.spot_plot_button)
@@ -241,6 +245,7 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.reload_button.clicked.connect(self.reload_slot)
         self.load_button.clicked.connect(self.load_slot)
         self.proper_motions.clicked.connect(self.__resize_plot)
+        self.append_load_button.clicked.connect(self.__load_files_append_mode)
         # checkboxes
         self.show_beam.clicked.connect(self.beam_visible)
         self.show_mark_range.clicked.connect(self.rectangle_visible)
@@ -343,7 +348,7 @@ class my_window_cl(QtWidgets.QMainWindow):
 
         # reading chosen files
         self.epochlst_obj = multiple_epochs_cl()
-        self.epochlst_obj.read_multiple_epochs(list_of_filenames[0])
+        self.epochlst_obj.read_multiple_epochs(list_of_filenames[0], reload=False, first_time=True, append=False)
 
         # filling the widget 
         self.__fill_list_of_projects(self.epochlst_obj.epochs)
@@ -374,3 +379,37 @@ class my_window_cl(QtWidgets.QMainWindow):
     
     def __resize_plot(self):
         self.spot_canvas.fig.canvas.draw_idle()
+
+    def __load_files_append_mode(self):
+        # -- failsafe --
+        try:
+            if len(self.epochlst_obj.epochs) == 0:
+                print("----> No data loaded!")
+        except:
+            print("----> No data loaded!")
+            return
+        
+        # -- actual data loading --
+        # enabling QFileDialog:
+        list_of_filenames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open file(s) (append mode!)", getcwd(), "All (*);;.DAT files (*.DAT *.dat)")
+        # -- if "cancel" was clicked --
+        if len(list_of_filenames[0]) == 0:
+            return
+        
+        # clearing widget
+        self.projects_list.clear()
+
+        # reading chosen files
+        self.epochlst_obj.read_multiple_epochs(list_of_filenames[0], reload=False, first_time=False, append=True)
+
+        # filling the widget 
+        self.__fill_list_of_projects(self.epochlst_obj.epochs)
+        self.plot_map_of_epoch(0)
+
+
+
+if __name__ == '__main__':
+    app = QtWidgets.QApplication([])
+    window = my_window_cl()
+    window.show()
+    app.exec_()

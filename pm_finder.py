@@ -25,8 +25,10 @@ sys.path.append(scr_directory + 'ui')
 # -- importing my super classes --
 from multiple_epochs import multiple_epochs_cl
 from my_window import my_window_cl
+from project_selector import project_selector_cl
 # --------------------------
 
+'''
 # -- creating list of files --
 spots_path = scr_directory + "examples/CepA/"
 
@@ -38,14 +40,13 @@ for i in range(len(files_in_dir)):
 # -- creating multiple epochs --
 dw = multiple_epochs_cl()
 dw.read_multiple_epochs(files_in_dir)
-
+'''
 
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-
-    widget = my_window_cl(dw)
-    widget.resize(1366,720)
-    widget.show()
-
-    sys.exit(app.exec_())
+    widget2 = project_selector_cl(app)
+    widget2.resize(800,600)
+    widget2.show()
+    
+    app.exec_()
