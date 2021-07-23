@@ -77,13 +77,20 @@ class project_selector_cl(QtWidgets.QWidget):
 
         # -- dirs in path --
         dirs_in_dir = next( walk ( self.projs_path ), (None, None, [] ) ) [1]
-        
+
         # -- fill list --
         for i in range(len(dirs_in_dir)):
             self.opened_projects_list.addItem(QtWidgets.QListWidgetItem(dirs_in_dir[i]))
         
     # -- loads project from selected directory --
     def __load_selected_project(self):
+        # failsafe
+        if self.opened_projects_list.currentRow() == -1:
+            qmBox = QtWidgets.QMessageBox()
+            qmBox.setText("You cannot load projects if there is none!\nJust click \"Discard\"!")
+            qmBox.exec()
+            return
+
         # -- getting project directory --
         self.selected_project_directory = self.projs_path + "/" + self.opened_projects_list.currentItem().text()
         # -- listing files from it --
@@ -94,6 +101,7 @@ class project_selector_cl(QtWidgets.QWidget):
         # making "multiple files" class
         self.dw = multiple_epochs_cl()
         self.dw.read_multiple_epochs(files_in_dir, reload=False, first_time=False, append=False)
+        self.dw.project_dirname = self.selected_project_directory
 
 
         # making window with these loaded 

@@ -7,6 +7,8 @@ from spot_class import maser_spots
 from datetime import datetime
 import os
 from os.path import realpath
+from PySide2.QtWidgets import QMessageBox
+
 class multiple_epochs_cl:
 
     def __init__(self):
@@ -45,22 +47,18 @@ class multiple_epochs_cl:
                 list_of_files[i] = self.projs_path + "/" + self.project_dirname + "/" + flename
 
         if append == True:
-            # we need to find project_dirname
-            tmp = list_of_files[0].split("/")
-            self.project_dirname = ""
-            for i in range(len(tmp)-1):
-                if i == len(tmp)-2:
-                    self.project_dirname = self.project_dirname + tmp[i]
-                else:
-                    self.project_dirname = self.project_dirname + tmp[i] + "/"
-            # we modify files list
+            # we copy files to self.project_dirname (it has been setted via project_slector)
+            # and we modify files list
             for i in range(len(list_of_files)):
+                # we need to get exact filename
                 flename = list_of_files[i].split("/")
                 flename = flename[len(flename)-1]
+                # we copy
+                os.system("cp " + list_of_files[i] + " " + self.project_dirname + "/" + flename)
+                # we modify list of files to suit our purpose
                 list_of_files[i] = self.project_dirname + "/" + flename
             # we append 
-            self.fileslst.extend(list_of_files)
-
+            self.fileslst.extend(list_of_files) # SELF.FILESLST SHOULD HAVE BEEN CREATED IN THE FIRST LOAD
         # iterating in a list_of_files
         # we need to keep list of files
         if reload == False and append == False:

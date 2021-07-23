@@ -381,13 +381,19 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.spot_canvas.fig.canvas.draw_idle()
 
     def __load_files_append_mode(self):
-        # -- failsafe --
+        # we need failsafe
+        # otherwise dumb user will use "append" mode when nothing is loaded
         try:
             if len(self.epochlst_obj.epochs) == 0:
-                print("----> No data loaded!")
+                msgBox = QtWidgets.QMessageBox()
+                msgBox.setText("You cannot load in \"append mode\" when nothing is loaded!")
+                msgBox.exec()
+                return
         except:
-            print("----> No data loaded!")
-            return
+                msgBox = QtWidgets.QMessageBox()
+                msgBox.setText("You cannot load in \"append mode\" when nothing is loaded!")
+                msgBox.exec()
+                return
         
         # -- actual data loading --
         # enabling QFileDialog:
