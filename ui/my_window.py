@@ -37,9 +37,11 @@ class my_window_cl(QtWidgets.QMainWindow):
                 # -- filling project list --
                 self.__fill_list_of_projects(self.epochlst_obj.epochs)
                 # -- plotting --
-                self.plot_map_of_epoch(0)
+                self.spot_canvas.add_plots_to_canvas(self.epochlst_obj)
                 # -- index --
                 self.chosen_project_index = 0
+                self.projects_list.setCurrentRow(self.chosen_project_index)
+                self.plot_map_of_epoch(self.chosen_project_index)
 
         
 
@@ -249,14 +251,16 @@ class my_window_cl(QtWidgets.QMainWindow):
         # checkboxes
         self.show_beam.clicked.connect(self.beam_visible)
         self.show_mark_range.clicked.connect(self.rectangle_visible)
+        self.show_spots.clicked.connect(self.__show_plot_checkbox_slot)
+        self.show_channel_label.clicked.connect(self.__show_plot_checkbox_slot)
 
     def __plot_on_list_click(self):
         # -- searching of the proper epoch --
         # -- by extracting project code --
         index = self.projects_list.currentRow()
         # -- putting it on the plot --
-        self.spot_canvas.spot_plotting_wrapper(self.epochlst_obj.epochs[index].dRA, self.epochlst_obj.epochs[index].dDEC, self.epochlst_obj.epochs[index].velocity, self.epochlst_obj.epochs[index].flux_density, label=self.epochlst_obj.epochs[index].project_code)
-
+        #self.spot_canvas.spot_plotting_wrapper(self.epochlst_obj.epochs[index].dRA, self.epochlst_obj.epochs[index].dDEC, self.epochlst_obj.epochs[index].velocity, self.epochlst_obj.epochs[index].flux_density, label=self.epochlst_obj.epochs[index].project_code)
+        self.spot_canvas.set_plot_visible(index, self.show_spots.isChecked(), self.show_channel_label.isChecked())
         # -- setting global index number --
         self.chosen_project_index = index
 
@@ -277,8 +281,9 @@ class my_window_cl(QtWidgets.QMainWindow):
         if len(self.epochlst_obj.epochs) == 0:
             print("----> No maps loaded! Failed, trying to plot...")
             return
-        self.spot_canvas.spot_plotting_wrapper(self.epochlst_obj.epochs[index].dRA, self.epochlst_obj.epochs[index].dDEC, self.epochlst_obj.epochs[index].velocity, self.epochlst_obj.epochs[index].flux_density, label=self.epochlst_obj.epochs[index].project_code)
-
+        #self.spot_canvas.spot_plotting_wrapper(self.epochlst_obj.epochs[index].dRA, self.epochlst_obj.epochs[index].dDEC, self.epochlst_obj.epochs[index].velocity, self.epochlst_obj.epochs[index].flux_density, label=self.epochlst_obj.epochs[index].project_code)
+        self.spot_canvas.set_plot_visible(index, self.show_spots.isChecked(), self.show_channel_label.isChecked())
+        
         # -- setting beam width to new --
         self.spot_canvas.beam_ellipse.set_width(self.epochlst_obj.epochs[index].beam_size_ra)
         self.spot_canvas.beam_ellipse.set_height(self.epochlst_obj.epochs[index].beam_size_dec)
@@ -292,7 +297,7 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.__fill_list_of_spots(index)
 
         # -- setting this epoch marked --
-        self.projects_list.setCurrentRow(index)
+        #self.projects_list.setCurrentRow(index)
 
     # -- fills project list with proper data --
     def __fill_list_of_projects(self, list_of_projects):
@@ -354,7 +359,7 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.__fill_list_of_projects(self.epochlst_obj.epochs)
 
         # plotting spot map of the first epoch
-        self.plot_map_of_epoch(0)
+        self.spot_canvas.add_plots_to_canvas(self.epochlst_obj)
 
     def beam_visible(self):
         if self.show_beam.isChecked() == False:
@@ -410,12 +415,11 @@ class my_window_cl(QtWidgets.QMainWindow):
 
         # filling the widget 
         self.__fill_list_of_projects(self.epochlst_obj.epochs)
-        self.plot_map_of_epoch(0)
+        
+        # adding plots to our "spot_plot_canvas_object"
+        self.spot_canvas.add_plots_to_canvas(self.epochlst_obj)
 
-
-
-if __name__ == '__main__':
-    app = QtWidgets.QApplication([])
-    window = my_window_cl()
-    window.show()
-    app.exec_()
+    # - makes spots visible and invisible -
+    def __show_plot_checkbox_slot(self):
+            self.spot_canvas.set_plot_visible(self.chosen_project_index, self.show_spots.isChecked(), self.show_channel_label.isChecked())
+            self.spot_canvas.fig.canvas.draw_idle()
