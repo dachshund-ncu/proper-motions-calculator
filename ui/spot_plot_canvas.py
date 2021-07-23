@@ -158,6 +158,9 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         # - and we make colorbar -
         self.__add_colorbar(vels)
 
+        # - and we make marker -
+        self.spot_marker_sc = self.axes.scatter(multiple_epochs_object.epochs[0].dRA[0], multiple_epochs_object.epochs[0].dDEC[0], c='black', s = log(multiple_epochs_object.epochs[0].flux_density[0] * 1000.0) **2.0 * 5, alpha=0.5, visible=False)
+
         # - grid -
         self.axes.grid()
         # - making x_axis inverse -
@@ -227,6 +230,11 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         self.fig.canvas.draw_idle()
     
     def plot_single_spot_filled(self, dx,dy,flux):
+        flux2 = log(flux * 1000.0)
+        self.spot_marker_sc.set_offsets([dx,dy])
+        self.spot_marker_sc.set_sizes([flux2**2.0 * 5])
+        self.fig.canvas.draw_idle()
+        '''
         if self.axes_cleared == False:
             flux2 = log(flux * 1000.0)
             self.axes.set_xlim(self.axes.get_xlim())
@@ -241,3 +249,4 @@ class mplSpotCanvas(FigureCanvasQTAgg):
             self.spot_marker_sc = self.axes.scatter(dx,dy,c='black', s=(flux2)**2.0 * 5, alpha=0.5)
             self.fig.canvas.draw_idle()
             self.axes_cleared = False
+        '''

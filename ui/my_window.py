@@ -161,10 +161,9 @@ class my_window_cl(QtWidgets.QMainWindow):
 
         # checkboxes
         self.show_cloudets = QtWidgets.QCheckBox("Show Cloudets")
-        self.show_spots = QtWidgets.QCheckBox("Show Spots")
         self.show_beam = QtWidgets.QCheckBox("Show Beam")
         self.show_mark_range = QtWidgets.QCheckBox("Show marked range")
-        self.show_channel_label = QtWidgets.QCheckBox("Show channel numbers")
+        
 
         # buttons
         self.add_to_cloudets_button = QtWidgets.QPushButton("Add to saved cloudets")
@@ -176,15 +175,12 @@ class my_window_cl(QtWidgets.QMainWindow):
 
         # add to gb layout
         self.cloudet_bar_layout.addWidget(self.show_cloudets)
-        self.cloudet_bar_layout.addWidget(self.show_spots)
         self.cloudet_bar_layout.addWidget(self.show_beam)
         self.cloudet_bar_layout.addWidget(self.show_mark_range)
-        self.cloudet_bar_layout.addWidget(self.show_channel_label)
         self.cloudet_bar_layout.addWidget(self.add_to_cloudets_button)
         self.cloudet_bar_layout.addWidget(self.remove_from_cloudets_button)
 
-        # setting "show spots" to checked
-        self.show_spots.setChecked(True)
+
 
         # list of cloudets 
         self.list_of_cloudets_gb = QtWidgets.QGroupBox("Cloudets")
@@ -214,7 +210,14 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.set_as_origin_button.setMinimumSize(0, 0)
         self.unset_origin_button.setMaximumSize(10000, 10000)
         self.unset_origin_button.setMinimumSize(0, 0)
+        # -- checkboxes --
+        self.show_spots = QtWidgets.QCheckBox("Show Spots")
+        self.show_channel_label = QtWidgets.QCheckBox("Show channel numbers")
+        self.show_selected_spot = QtWidgets.QCheckBox("Show selected spot")
         # adding buttons to the layout
+        self.spot_shifter_buttons_vbox.addWidget(self.show_spots)
+        self.spot_shifter_buttons_vbox.addWidget(self.show_channel_label)
+        self.spot_shifter_buttons_vbox.addWidget(self.show_selected_spot)
         self.spot_shifter_buttons_vbox.addWidget(self.set_as_origin_button)
         self.spot_shifter_buttons_vbox.addWidget(self.unset_origin_button)
         # --- list of spots ---
@@ -232,7 +235,10 @@ class my_window_cl(QtWidgets.QMainWindow):
 
         # making tabs 
         self.tab_widget_cl_sp.addTab(self.cloudet_bar_widget, "Cloudlets")
-        self.tab_widget_cl_sp.addTab(self.spot_shifter_widget, "Buttons")
+        self.tab_widget_cl_sp.addTab(self.spot_shifter_widget, "Spots")
+
+        # setting "show spots" to checked
+        self.show_spots.setChecked(True)
 
         
     
@@ -253,6 +259,7 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.show_mark_range.clicked.connect(self.rectangle_visible)
         self.show_spots.clicked.connect(self.__show_plot_checkbox_slot)
         self.show_channel_label.clicked.connect(self.__show_plot_checkbox_slot)
+        self.show_selected_spot.clicked.connect(self.__switch_marked_spot_visibility_slot)
 
     def __plot_on_list_click(self):
         # -- searching of the proper epoch --
@@ -275,6 +282,9 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.list_of_spots_gb.setTitle("Spots of " + self.epochlst_obj.epochs[index].project_code)
         # filling list of spots
         self.__fill_list_of_spots(index)
+        self.list_of_spots.setCurrentRow(0)
+        # -- calling "mark" ---
+        self.__mark_spot_on_click()
 
     def plot_map_of_epoch(self, index = 0):
         # -- failsafe, if there are no epochs loaded --
@@ -423,3 +433,7 @@ class my_window_cl(QtWidgets.QMainWindow):
     def __show_plot_checkbox_slot(self):
             self.spot_canvas.set_plot_visible(self.chosen_project_index, self.show_spots.isChecked(), self.show_channel_label.isChecked())
             self.spot_canvas.fig.canvas.draw_idle()
+
+    def __switch_marked_spot_visibility_slot(self):
+        self.spot_canvas.spot_marker_sc.set_visible(self.show_selected_spot.isChecked())
+        self.spot_canvas.fig.canvas.draw_idle()
