@@ -25,7 +25,7 @@ there is example file in the "examples" directory:
 '''
 
 # --- importing important libraries ---
-from numpy import loadtxt
+from numpy import loadtxt, cos, radians
 from astropy.time import Time
 
 class maser_spots:
@@ -115,6 +115,20 @@ class maser_spots:
         self.decimalyear = self.tee.decimalyear
         self.jd = self.tee.jd
         self.mjd = self.tee.mjd
-        
 
-
+    # -- setting the 0,0 point --
+    def set_as_origin(self, spot_ra, spot_dec):
+        # shifting the spots
+        self.dRA = self.dRA - spot_ra
+        self.dDEC = self.dDEC - spot_dec
+        # shifting the origin
+        self.DEC = self.DEC - (spot_dec / 3600.0 / 1000.0) # DEC is easy
+        # we need to compensate for dec
+        # RA is in hrs, spot_ra is in mas
+        # mas is RA [degrees] / 3600 / 1000
+        # mas is also compensated for 1 / cos(dec)
+        # so we need to do:
+        spot_ra_to_shift = spot_ra / 3600 / 1000  # degrees
+        spot_ra_to_shift = spot_ra_to_shift / 15.0 # arcsec, but hourangled
+        spot_ra_to_shift = spot_ra_to_shift * cos(radians(self.DEC) ) # compensated for dec
+        self.RA = self.RA - spot_ra_to_shift

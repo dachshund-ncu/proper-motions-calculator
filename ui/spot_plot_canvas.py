@@ -39,44 +39,6 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         # -- connecting canvas to methods --
         self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         self.axes_cleared = True
-
-
-    def spot_plotting_wrapper(self, x,y, vel, flux, label=""):
-        # -- clearing axes --
-        self.axes.clear()
-        self.cbax.clear()
-        
-        # -- doing rest of things --
-        flux2 = log(flux * 1000.0)
-        # -- creating color table --
-        scaled_vel = (vel - vel.min()) / vel.ptp()
-        colors = plt.cm.jet(scaled_vel)
-
-        # -- scatter plot --
-        self.axes.scatter(x, y, s=(flux2)**2.0 * 5, edgecolor=colors, marker="o", facecolor="none")
-        # - array for colorbar -
-        p = plt.cm.ScalarMappable(cmap=plt.cm.jet)
-        p.set_array(vel)
-        self.fig.colorbar(p, ax=self.axes, cax=self.cbax)
-        self.cbax.set_ylim(vel.min(), vel.max())
-        self.axes.grid()
-
-        # - setting title -
-        self.axes.set_title(label)
-
-        # - making x_axis inverse -
-        self.axes.invert_xaxis()
-
-        # - redoing this nice plot -
-        self.__make_nice_looking_plot()
-        
-        # - adding ellipse and rectangle -
-        self.axes.add_patch(self.beam_ellipse)
-        self.axes.add_patch(self.mark_rect)
-
-        # - re-drawing figure -
-        self.fig.canvas.draw_idle()
-        self.axes_cleared = True
     
     # -- adds new plot (collection etc. to existing axes) --
     def __add_plot(self, x, y, flux, vel, vmin, vrange):
@@ -234,19 +196,3 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         self.spot_marker_sc.set_offsets([dx,dy])
         self.spot_marker_sc.set_sizes([flux2**2.0 * 5])
         self.fig.canvas.draw_idle()
-        '''
-        if self.axes_cleared == False:
-            flux2 = log(flux * 1000.0)
-            self.axes.set_xlim(self.axes.get_xlim())
-            self.axes.set_ylim(self.axes.get_ylim())
-            self.spot_marker_sc.set_offsets([dx,dy])
-            self.spot_marker_sc.set_sizes([flux2**2.0 * 5])
-            self.fig.canvas.draw_idle()
-        else:
-            flux2 = log(flux * 1000.0)
-            self.axes.set_xlim(self.axes.get_xlim())
-            self.axes.set_ylim(self.axes.get_ylim())
-            self.spot_marker_sc = self.axes.scatter(dx,dy,c='black', s=(flux2)**2.0 * 5, alpha=0.5)
-            self.fig.canvas.draw_idle()
-            self.axes_cleared = False
-        '''

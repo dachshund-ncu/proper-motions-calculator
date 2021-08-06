@@ -254,6 +254,7 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.load_button.clicked.connect(self.load_slot)
         self.proper_motions.clicked.connect(self.__resize_plot)
         self.append_load_button.clicked.connect(self.__load_files_append_mode)
+        self.set_as_origin_button.clicked.connect(self.__set_new_origin)
         # checkboxes
         self.show_beam.clicked.connect(self.beam_visible)
         self.show_mark_range.clicked.connect(self.rectangle_visible)
@@ -437,3 +438,30 @@ class my_window_cl(QtWidgets.QMainWindow):
     def __switch_marked_spot_visibility_slot(self):
         self.spot_canvas.spot_marker_sc.set_visible(self.show_selected_spot.isChecked())
         self.spot_canvas.fig.canvas.draw_idle()
+
+    # - sets new origin slot -
+    def __set_new_origin(self):
+        # getting index of the selected spot
+        index = self.list_of_spots.currentRow()
+        # getting RA and DEC of selected spot
+        spot_ra = self.epochlst_obj.epochs[self.chosen_project_index].dRA[index]
+        spot_dec = self.epochlst_obj.epochs[self.chosen_project_index].dDEC[index]
+        # shifting spots
+        self.epochlst_obj.epochs[self.chosen_project_index].set_as_origin(spot_ra, spot_dec)
+        # - updating plot data -
+        # creating "offsets" table
+        offsets = []
+        for i in range(len(self.epochlst_obj.epochs[self.chosen_project_index].dRA)):
+            offsets.append( [ self.epochlst_obj.epochs[self.chosen_project_index].dRA[i], self.epochlst_obj.epochs[self.chosen_project_index].dDEC[i] ] )
+
+        self.spot_canvas.spot_plots_table[self.chosen_project_index].set_offsets( offsets )
+        # moving the marker point
+        self.spot_canvas.spot_marker_sc.set_offsets([self.epochlst_obj.epochs[self.chosen_project_index].dRA[index], self.epochlst_obj.epochs[self.chosen_project_index].dDEC[index]])
+        
+        # moving the channel labels
+        for i in range(len(self.spot_canvas.channel_labels_table[self.chosen_project_index])):
+            self.spot_canvas.channel_labels_table[self.chosen_project_index][i].set_position(offsets[i])
+        
+        # redrawing plot
+        self.spot_canvas.fig.canvas.draw_idle()
+        
