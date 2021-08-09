@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Purpose of this class is to give hold data about detected maser spots
+Purpose of this class is to hold data about detected maser spots
 Input files required columns:
 
 Channel | Velocity (km/s) | FLux Density (Jy/beam) | Flux error | dRA (mas) | dRA error (mas) | dDEC (mas) | dDEC error (mas)
@@ -39,6 +39,7 @@ class maser_spots:
     def __read_spots_file(self, filename): # __ means it is PRIVATE
         # -- reading the spots file --
         tmp = loadtxt(filename) # not "SELF" 'cause it is not needed afterwards
+        self.flnme = filename # saving filename, it will be useful later
         # -- assinging the file structure to proper tables --
         self.channel = tmp[:,0]
         self.velocity = tmp[:,1]
@@ -118,17 +119,59 @@ class maser_spots:
 
     # -- setting the 0,0 point --
     def set_as_origin(self, spot_ra, spot_dec):
+        # assigning old spots to other tables
+        self.dRA_noshift = self.dRA
+        self.dDEC_noshift = self.dDEC
         # shifting the spots
         self.dRA = self.dRA - spot_ra
         self.dDEC = self.dDEC - spot_dec
         # shifting the origin
-        self.DEC = self.DEC - (spot_dec / 3600.0 / 1000.0) # DEC is easy
-        # we need to compensate for dec
+        # DEC is easy - we just need to convert spot_dec from mas to degrees
+        # first, we do a backup of the old DEC
+        self.DEC_noshift = self.DEC
+        # then we shift
+        self.DEC = self.DEC - (spot_dec / 3600.0 / 1000.0)
+        # RA is harder:
+        # mas of the RA axis is compensated for DEC (* cos(DEC) )
         # RA is in hrs, spot_ra is in mas
         # mas is RA [degrees] / 3600 / 1000
         # mas is also compensated for 1 / cos(dec)
         # so we need to do:
-        spot_ra_to_shift = spot_ra / 3600 / 1000  # degrees
-        spot_ra_to_shift = spot_ra_to_shift / 15.0 # arcsec, but hourangled
-        spot_ra_to_shift = spot_ra_to_shift * cos(radians(self.DEC) ) # compensated for dec
+        # backup
+        self.RA_noshift = self.RA
+        spot_ra_to_shift = spot_ra / 3600 / 1000  # mas -> degrees
+        spot_ra_to_shift = spot_ra_to_shift / 15.0 # degrees -> hourangle
+        spot_ra_to_shift = spot_ra_to_shift * ( 1.0 / cos(radians(self.DEC) ) ) # hourangle, de-compensated for DEC
         self.RA = self.RA - spot_ra_to_shift
+        
+        # -- saving new origin --
+        self.__save_new_origin(spot_ra, spot_dec)
+
+        # -- setting the bool --
+        self.shifted_bool = True
+
+    def unset_as_origin(self):
+        # checking, if 'shifted' bool is True or false:
+        if self.shifted_bool:
+            self.dRA = self.dRA_noshift
+            self.dDEC = self.dDEC_noshift
+            self.RA = self.RA_noshift
+            self.DEC = self.DEC_noshift
+        else:
+            # it does nothing fi there was no shift yet
+            pass
+    
+    def __find_root_directory(self):
+        # -- searching for root directory --
+        tmp = self.flnme.split("/")
+        root_directory = ""
+        for i in range(len(tmp)-1):
+            root_directory = root_directory + tmp[i] + "/"
+        
+        return root_directory
+
+    def __save_new_origin(self, spot_ra, spot_dec):
+        # we need to find the root directory at the beginning
+        # so...
+        projs_dir = self.__find_root_directory()
+        # we create new file, called "new_origin_of" + spots_filename

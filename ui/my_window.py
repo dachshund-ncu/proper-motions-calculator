@@ -250,18 +250,42 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.list_of_spots.clicked.connect(self.__mark_spot_on_click)
 
         # buttons
-        self.reload_button.clicked.connect(self.reload_slot)
-        self.load_button.clicked.connect(self.load_slot)
+        self.reload_button.clicked.connect(self.__reload_slot)
+        self.load_button.clicked.connect(self.__load_slot)
         self.proper_motions.clicked.connect(self.__resize_plot)
         self.append_load_button.clicked.connect(self.__load_files_append_mode)
         self.set_as_origin_button.clicked.connect(self.__set_new_origin)
+        self.unset_origin_button.clicked.connect(self.__unset_new_origin)
         # checkboxes
-        self.show_beam.clicked.connect(self.beam_visible)
-        self.show_mark_range.clicked.connect(self.rectangle_visible)
+        self.show_beam.clicked.connect(self.__beam_visible)
+        self.show_mark_range.clicked.connect(self.__rectangle_visible)
         self.show_spots.clicked.connect(self.__show_plot_checkbox_slot)
         self.show_channel_label.clicked.connect(self.__show_plot_checkbox_slot)
         self.show_selected_spot.clicked.connect(self.__switch_marked_spot_visibility_slot)
 
+
+
+    def plot_map_of_epoch(self, index = 0):
+        # -- failsafe, if there are no epochs loaded --
+        if len(self.epochlst_obj.epochs) == 0:
+            print("----> No maps loaded! Failed, trying to plot...")
+            return
+        #self.spot_canvas.spot_plotting_wrapper(self.epochlst_obj.epochs[index].dRA, self.epochlst_obj.epochs[index].dDEC, self.epochlst_obj.epochs[index].velocity, self.epochlst_obj.epochs[index].flux_density, label=self.epochlst_obj.epochs[index].project_code)
+        self.spot_canvas.set_plot_visible(index, self.show_spots.isChecked(), self.show_channel_label.isChecked())
+        
+        # -- setting beam width to new --
+        self.spot_canvas.beam_ellipse.set_width(self.epochlst_obj.epochs[index].beam_size_ra)
+        self.spot_canvas.beam_ellipse.set_height(self.epochlst_obj.epochs[index].beam_size_dec)
+
+        # -- setting label on the group box --
+        self.list_of_cloudets_gb.setTitle("Cloudets of " + self.epochlst_obj.epochs[index].project_code)
+
+        # -- setting label on the spot list --
+        self.list_of_spots_gb.setTitle("Spots of " + self.epochlst_obj.epochs[index].project_code)
+        # filling list of spots
+        self.__fill_list_of_spots(index)
+
+    # ====== SLOTS ====== 
     def __plot_on_list_click(self):
         # -- searching of the proper epoch --
         # -- by extracting project code --
@@ -287,43 +311,8 @@ class my_window_cl(QtWidgets.QMainWindow):
         # -- calling "mark" ---
         self.__mark_spot_on_click()
 
-    def plot_map_of_epoch(self, index = 0):
-        # -- failsafe, if there are no epochs loaded --
-        if len(self.epochlst_obj.epochs) == 0:
-            print("----> No maps loaded! Failed, trying to plot...")
-            return
-        #self.spot_canvas.spot_plotting_wrapper(self.epochlst_obj.epochs[index].dRA, self.epochlst_obj.epochs[index].dDEC, self.epochlst_obj.epochs[index].velocity, self.epochlst_obj.epochs[index].flux_density, label=self.epochlst_obj.epochs[index].project_code)
-        self.spot_canvas.set_plot_visible(index, self.show_spots.isChecked(), self.show_channel_label.isChecked())
-        
-        # -- setting beam width to new --
-        self.spot_canvas.beam_ellipse.set_width(self.epochlst_obj.epochs[index].beam_size_ra)
-        self.spot_canvas.beam_ellipse.set_height(self.epochlst_obj.epochs[index].beam_size_dec)
-
-        # -- setting label on the group box --
-        self.list_of_cloudets_gb.setTitle("Cloudets of " + self.epochlst_obj.epochs[index].project_code)
-
-        # -- setting label on the spot list --
-        self.list_of_spots_gb.setTitle("Spots of " + self.epochlst_obj.epochs[index].project_code)
-        # filling list of spots
-        self.__fill_list_of_spots(index)
-
-        # -- setting this epoch marked --
-        #self.projects_list.setCurrentRow(index)
-
-    # -- fills project list with proper data --
-    def __fill_list_of_projects(self, list_of_projects):
-            for i in list_of_projects:
-                self.projects_list.addItem(QtWidgets.QListWidgetItem(i.project_code + " Date: " + i.time_string + " PI: " + i.project_pi))
-    
-    def __fill_list_of_spots(self, index):
-        # - clear the previous list -
-        self.list_of_spots.clear()
-        # - loop to fill it again -
-        for i in range(len(self.epochlst_obj.epochs[index].flux_density)):
-            self.list_of_spots.addItem(QtWidgets.QListWidgetItem ( "%d   %.2f   %.2f   %.2f" % (self.epochlst_obj.epochs[index].channel[i], self.epochlst_obj.epochs[index].flux_density[i], self.epochlst_obj.epochs[index].dRA[i], self.epochlst_obj.epochs[index].dDEC[i] ) ) )
-
     # -- slot for reloading --
-    def reload_slot(self):
+    def __reload_slot(self):
         # clearing lists
         self.epochlst_obj.epochs = [] # clearing list of "spot class" objects
 
@@ -342,8 +331,31 @@ class my_window_cl(QtWidgets.QMainWindow):
         # printing
         print("----------")
         print("----> Reloaded")
+
+    # - makes spots visible and invisible -
+    def __show_plot_checkbox_slot(self):
+            self.spot_canvas.set_plot_visible(self.chosen_project_index, self.show_spots.isChecked(), self.show_channel_label.isChecked())
+            self.spot_canvas.fig.canvas.draw_idle()
+
+    def __switch_marked_spot_visibility_slot(self):
+        self.spot_canvas.spot_marker_sc.set_visible(self.show_selected_spot.isChecked())
+        self.spot_canvas.fig.canvas.draw_idle()
     
-    def load_slot(self):
+    def __beam_visible(self):
+        if self.show_beam.isChecked() == False:
+            self.spot_canvas.beam_ellipse.set_visible(False)
+        else:
+            self.spot_canvas.beam_ellipse.set_visible(True)
+        self.spot_canvas.fig.canvas.draw_idle()
+
+    def __rectangle_visible(self):
+        if self.show_mark_range.isChecked() == False:
+            self.spot_canvas.mark_rect.set_visible(False)
+        else:
+            self.spot_canvas.mark_rect.set_visible(True)
+        self.spot_canvas.fig.canvas.draw_idle()
+
+    def __load_slot(self):
 
         # enabling QFileDialog:
         list_of_filenames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open file(s)", getcwd(), "All (*);;.DAT files (*.DAT *.dat)")
@@ -371,30 +383,6 @@ class my_window_cl(QtWidgets.QMainWindow):
 
         # plotting spot map of the first epoch
         self.spot_canvas.add_plots_to_canvas(self.epochlst_obj)
-
-    def beam_visible(self):
-        if self.show_beam.isChecked() == False:
-            self.spot_canvas.beam_ellipse.set_visible(False)
-        else:
-            self.spot_canvas.beam_ellipse.set_visible(True)
-        self.spot_canvas.fig.canvas.draw_idle()
-
-    def rectangle_visible(self):
-        if self.show_mark_range.isChecked() == False:
-            self.spot_canvas.mark_rect.set_visible(False)
-        else:
-            self.spot_canvas.mark_rect.set_visible(True)
-        self.spot_canvas.fig.canvas.draw_idle()
-
-
-    def __mark_spot_on_click(self):
-
-        index = self.list_of_spots.currentRow()
-
-        self.spot_canvas.plot_single_spot_filled(self.epochlst_obj.epochs[self.chosen_project_index].dRA[index], self.epochlst_obj.epochs[self.chosen_project_index].dDEC[index], self.epochlst_obj.epochs[self.chosen_project_index].flux_density[index])
-    
-    def __resize_plot(self):
-        self.spot_canvas.fig.canvas.draw_idle()
 
     def __load_files_append_mode(self):
         # we need failsafe
@@ -430,13 +418,13 @@ class my_window_cl(QtWidgets.QMainWindow):
         # adding plots to our "spot_plot_canvas_object"
         self.spot_canvas.add_plots_to_canvas(self.epochlst_obj)
 
-    # - makes spots visible and invisible -
-    def __show_plot_checkbox_slot(self):
-            self.spot_canvas.set_plot_visible(self.chosen_project_index, self.show_spots.isChecked(), self.show_channel_label.isChecked())
-            self.spot_canvas.fig.canvas.draw_idle()
+    def __mark_spot_on_click(self):
 
-    def __switch_marked_spot_visibility_slot(self):
-        self.spot_canvas.spot_marker_sc.set_visible(self.show_selected_spot.isChecked())
+        index = self.list_of_spots.currentRow()
+
+        self.spot_canvas.plot_single_spot_filled(self.epochlst_obj.epochs[self.chosen_project_index].dRA[index], self.epochlst_obj.epochs[self.chosen_project_index].dDEC[index], self.epochlst_obj.epochs[self.chosen_project_index].flux_density[index])
+    
+    def __resize_plot(self):
         self.spot_canvas.fig.canvas.draw_idle()
 
     # - sets new origin slot -
@@ -450,18 +438,63 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.epochlst_obj.epochs[self.chosen_project_index].set_as_origin(spot_ra, spot_dec)
         # - updating plot data -
         # creating "offsets" table
-        offsets = []
-        for i in range(len(self.epochlst_obj.epochs[self.chosen_project_index].dRA)):
-            offsets.append( [ self.epochlst_obj.epochs[self.chosen_project_index].dRA[i], self.epochlst_obj.epochs[self.chosen_project_index].dDEC[i] ] )
+        offsets = self.__make_offsets_for_scatter_plot()
 
         self.spot_canvas.spot_plots_table[self.chosen_project_index].set_offsets( offsets )
         # moving the marker point
         self.spot_canvas.spot_marker_sc.set_offsets([self.epochlst_obj.epochs[self.chosen_project_index].dRA[index], self.epochlst_obj.epochs[self.chosen_project_index].dDEC[index]])
         
         # moving the channel labels
-        for i in range(len(self.spot_canvas.channel_labels_table[self.chosen_project_index])):
-            self.spot_canvas.channel_labels_table[self.chosen_project_index][i].set_position(offsets[i])
+        self.__move_channel_labels(offsets)
         
         # redrawing plot
         self.spot_canvas.fig.canvas.draw_idle()
+    
+    def __unset_new_origin(self):
+        # we need no "index" stuff
+        # we just invoke the "unset_as_origin" method
+        self.epochlst_obj.epochs[self.chosen_project_index].unset_as_origin()
         
+        # and repeat stuff with updating the graph
+        # create new offsets
+        offsets = self.__make_offsets_for_scatter_plot()
+        # update the graph
+        self.spot_canvas.spot_plots_table[self.chosen_project_index].set_offsets( offsets )
+        # move the marker point
+        index = self.list_of_spots.currentRow()
+        self.spot_canvas.spot_marker_sc.set_offsets([self.epochlst_obj.epochs[self.chosen_project_index].dRA[index], self.epochlst_obj.epochs[self.chosen_project_index].dDEC[index]])
+        # move the channel labels
+        self.__move_channel_labels(offsets)
+        # redrawing plot
+        self.spot_canvas.fig.canvas.draw_idle()
+
+
+    # ====== HELPER PRIVATE METHOODS ====== 
+    # -- this is just to avoid spaghetti --
+    # calculates offsets to update the scatter plot
+    def __make_offsets_for_scatter_plot(self):
+        offsets = []
+        for i in range(len(self.epochlst_obj.epochs[self.chosen_project_index].dRA)):
+            offsets.append( [ self.epochlst_obj.epochs[self.chosen_project_index].dRA[i], self.epochlst_obj.epochs[self.chosen_project_index].dDEC[i] ] )
+        
+        return offsets
+    
+    # moves channel labels from "spot_plot" widget
+    def __move_channel_labels(self, offsets):
+        # only two lines
+        # it makes use of the global "self.chosen_project_index"
+        for i in range(len(offsets)):
+            self.spot_canvas.channel_labels_table[self.chosen_project_index][i].set_position(offsets[i])
+    
+    # fills project list with proper data
+    def __fill_list_of_projects(self, list_of_projects):
+            for i in list_of_projects:
+                self.projects_list.addItem(QtWidgets.QListWidgetItem(i.project_code + " Date: " + i.time_string + " PI: " + i.project_pi))
+    
+    # fills list of spots with proper data
+    def __fill_list_of_spots(self, index):
+        # - clear the previous list -
+        self.list_of_spots.clear()
+        # - loop to fill it again -
+        for i in range(len(self.epochlst_obj.epochs[index].flux_density)):
+            self.list_of_spots.addItem(QtWidgets.QListWidgetItem ( "%d   %.2f   %.2f   %.2f" % (self.epochlst_obj.epochs[index].channel[i], self.epochlst_obj.epochs[index].flux_density[i], self.epochlst_obj.epochs[index].dRA[i], self.epochlst_obj.epochs[index].dDEC[i] ) ) )
