@@ -117,8 +117,31 @@ class maser_spots:
         self.jd = self.tee.jd
         self.mjd = self.tee.mjd
 
+        # -- reading shifted part --
+        projs_dir, raw_flnm = self.__find_root_directory()
+
+        # try to read shifted
+        try:
+            # opening in "read" mode
+            fle = open(projs_dir + 'shifted/' + 'new_origin_of_' + raw_flnm, 'r+')
+            a = fle.readlines()
+            fle.close()
+        except:
+            print("----> FOR FILE:", raw_flnm, "No shift information found!")
+            return # it will prevent from executing code below
+        
+        # ---------------------
+        # this code will be executed if "except" won't trigger
+        # getting shift values
+        tmp = a[1].split()
+        origin_shift_ra = float(tmp[0])
+        origin_shift_dec = float(tmp[1])
+        # shifting to shifted epoch
+        self.set_as_origin(origin_shift_ra, origin_shift_dec, save=False)
+        # ----------------------
+
     # -- setting the 0,0 point --
-    def set_as_origin(self, spot_ra, spot_dec):
+    def set_as_origin(self, spot_ra, spot_dec, save=True):
         # assigning old spots to other tables
         self.dRA_noshift = self.dRA
         self.dDEC_noshift = self.dDEC
@@ -145,7 +168,8 @@ class maser_spots:
         self.RA = self.RA - spot_ra_to_shift
         
         # -- saving new origin --
-        self.__save_new_origin(spot_ra, spot_dec)
+        if save:
+            self.__save_new_origin(spot_ra, spot_dec)
 
         # -- setting the bool --
         self.shifted_bool = True
@@ -168,10 +192,21 @@ class maser_spots:
         for i in range(len(tmp)-1):
             root_directory = root_directory + tmp[i] + "/"
         
-        return root_directory
+        return root_directory, tmp[len(tmp)-1]
 
     def __save_new_origin(self, spot_ra, spot_dec):
         # we need to find the root directory at the beginning
         # so...
-        projs_dir = self.__find_root_directory()
+        projs_dir, raw_flnm = self.__find_root_directory()
         # we create new file, called "new_origin_of" + spots_filename
+        try:
+            # opening file (w+ stands for write mode) - if such file exists, it will be overwritten
+            fle = open(projs_dir + 'shifted/' + 'new_origin_of_' + raw_flnm, 'w+')
+            # writing header
+            fle.write("# origin_dRA (mas)   origin_dDEC (mas)\n")
+            # writing informations about origin
+            fle.write('%f   %f' % (spot_ra, spot_dec))
+            # closing the file
+            fle.close()
+        except:
+            print("Failed to open file: ", projs_dir + 'shifted/' + 'new_origin_of_' + raw_flnm)
