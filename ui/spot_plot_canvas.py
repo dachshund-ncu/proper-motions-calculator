@@ -10,6 +10,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.patches import Ellipse, Rectangle
+from matplotlib.widgets import RectangleSelector
 from numpy import min, ptp, log
 matplotlib.use('Qt5Agg')
 
@@ -26,7 +27,7 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         # beam plot - ellipse
         self.beam_ellipse = Ellipse([0,0], 4.5, 4.5, angle=0.0, fc='None', ec='black', visible=False)
         # rectangle marker
-        self.mark_rect = Rectangle([0,0], 30, 30, fc='grey', ec='black', visible=False)
+        #self.mark_rect = Rectangle([0,0], 30, 30, fc='grey', ec='black', visible=False)
         # table with existing collection objects (spots)
         self.spot_plots_table = []
         # table with existing collection objects (cloudets)
@@ -34,10 +35,21 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         # table with existing objects (text)
         self.channel_labels_table = []
 
+
+        #self.fig.canvas.mpl_connect('key_press_event', self.toggle_selector)
+
         super(mplSpotCanvas, self).__init__(self.fig)
 
         # -- connecting canvas to methods --
         self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+        # rectangle selector
+        self.selector = RectangleSelector(self.axes, self.line_select_callback, drawtype='box', useblit=True, button=[1,3], minspanx=2, minspany=2, spancoords='pixels', interactive=True)
+
+        # first instance of the "selected range" to avoid errors
+        self.selected_range = [0,0,0,0]
+
+        
+        # setting up one important bool
         self.axes_cleared = True
     
     # -- adds new plot (collection etc. to existing axes) --
@@ -129,7 +141,7 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         self.axes.invert_xaxis()
         # - adding ellipse and rectangle -
         self.axes.add_patch(self.beam_ellipse)
-        self.axes.add_patch(self.mark_rect)
+        #self.axes.add_patch(self.mark_rect)
         # - at the end - we make nice looking plot -
         self.__make_nice_looking_plot()
 
@@ -186,8 +198,8 @@ class mplSpotCanvas(FigureCanvasQTAgg):
     def onclick(self, event):
         x,y = event.xdata, event.ydata
         if x == None or y == None:
-            #print("----> Tried to draw beam outside plot. Fortunately nothing happened")
             return
+        
         self.beam_ellipse.set_center([x,y])
         self.fig.canvas.draw_idle()
     
@@ -196,3 +208,21 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         self.spot_marker_sc.set_offsets([dx,dy])
         self.spot_marker_sc.set_sizes([flux2**2.0 * 5])
         self.fig.canvas.draw_idle()
+    
+    # -- callback for the click and release signals --
+    def line_select_callback(self, eclick, erelease):
+        # 'eclick' and 'erelease' are just mouse right button press and release signals
+        x1, y1 = eclick.xdata, eclick.ydata
+        x2, y2 = erelease.xdata, erelease.ydata
+
+        # setting global table of ranges
+        self.selected_range = [x1,x2,y1,y2]
+
+    '''
+    def toggle_selector(self, event):
+        print("Key pressed xD")
+        if event.key in ['Q', 'q'] and self.selector.active:
+            self.selector.set_active(False)
+        if event.key in ['A', 'a'] and not self.selector.active:
+            self.selector.set_active(True)
+    '''

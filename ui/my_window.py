@@ -10,6 +10,7 @@ from matplotlib.figure import Figure
 from os import getcwd
 import matplotlib
 import matplotlib.pyplot as plt
+from numpy import searchsorted
 
 matplotlib.use('Qt5Agg')
 # ----------------------------------
@@ -256,6 +257,7 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.append_load_button.clicked.connect(self.__load_files_append_mode)
         self.set_as_origin_button.clicked.connect(self.__set_new_origin)
         self.unset_origin_button.clicked.connect(self.__unset_new_origin)
+        self.add_to_cloudets_button.clicked.connect(self.__append_to_cloudet_list)
         # checkboxes
         self.show_beam.clicked.connect(self.__beam_visible)
         self.show_mark_range.clicked.connect(self.__rectangle_visible)
@@ -349,10 +351,12 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.spot_canvas.fig.canvas.draw_idle()
 
     def __rectangle_visible(self):
+        # setting span selector active / inactive
         if self.show_mark_range.isChecked() == False:
-            self.spot_canvas.mark_rect.set_visible(False)
+            self.spot_canvas.selector.set_active(False)
         else:
-            self.spot_canvas.mark_rect.set_visible(True)
+            self.spot_canvas.selector.set_active(True)
+
         self.spot_canvas.fig.canvas.draw_idle()
 
     def __load_slot(self):
@@ -468,7 +472,33 @@ class my_window_cl(QtWidgets.QMainWindow):
         # redrawing plot
         self.spot_canvas.fig.canvas.draw_idle()
 
+    def __append_to_cloudet_list(self):
+        # we need to use marked range
+        # so if marking range is inactive, we basically should do nothing
+        if self.show_mark_range.isChecked() != True:
+                msgBox = QtWidgets.QMessageBox()
+                msgBox.setText("Marking spots is inactive, so nothing can be appended to the cloudet list")
+                msgBox.exec()
+                return
+        
+        # if it is checked, then we do another failsafe - if the checkbox has been selected, but no range selected yet:
+        if self.spot_canvas.selected_range == [0,0,0,0]:
+                msgBox = QtWidgets.QMessageBox()
+                msgBox.setText("No range selected yet!")
+                msgBox.exec()
+                return
 
+        # now we can do funnier stuff
+        # we extract the spot parameters from the marked range
+        # limits
+        limits = self.spot_canvas.selected_range
+        # getting params from params range
+        channels, velocities, dX, dX_err, dY, dY_err, flux, flux_err = self.epochlst_obj.epochs[self.chosen_project_index].get_spots_params_from_range(limits[0], limits[1], limits[2], limits[3])
+        # getting cloudets
+        cloudet_vel, cloudet_dRA, cloudet_dRA_err, cloudet_dDEC, cloudet_dDEC_err, cloudet_flux, cloudet_flux_err = self.epochlst_obj.epochs[self.chosen_project_index].calculate_cloudet_params(velocities, dX, dX_err, dY, dY_err, flux, flux_err)
+
+        # adding to list of cloudets
+        self.list_of_cloudets.addItem(QtWidgets.QListWidgetItem( "%.3f  %.3f  %.3f  %.3f" % (cloudet_vel, cloudet_flux, cloudet_dRA, cloudet_dDEC ) ) )
     # ====== HELPER PRIVATE METHOODS ====== 
     # -- this is just to avoid spaghetti --
     # calculates offsets to update the scatter plot

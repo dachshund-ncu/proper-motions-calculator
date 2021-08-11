@@ -25,7 +25,7 @@ there is example file in the "examples" directory:
 '''
 
 # --- importing important libraries ---
-from numpy import loadtxt, cos, radians
+from numpy import loadtxt, cos, radians, asarray, average
 from astropy.time import Time
 
 class maser_spots:
@@ -210,3 +210,65 @@ class maser_spots:
             fle.close()
         except:
             print("Failed to open file: ", projs_dir + 'shifted/' + 'new_origin_of_' + raw_flnm)
+    
+    # it simply gets spot positions, velocities, channels and fluxes from specified spatial range
+    def get_spots_params_from_range(self, ra_min, ra_max, dec_min, dec_max):
+        # sometimes ra_max can be smaller, than ra_min
+        # in this case, we might want to switch them in places
+        # same applies to dec_min and dec_max
+        if ra_min > ra_max: # RA
+            ra_mintmp = ra_min
+            ra_maxtmp = ra_max
+            ra_min = ra_maxtmp
+            ra_max = ra_mintmp
+        
+        if dec_min > dec_max:
+            dec_mintmp = dec_min
+            dec_maxtmp = dec_max
+            dec_min = dec_maxtmp
+            dec_max = dec_mintmp
+
+        # we need our tmp tables, that will be returned:
+        marked_dRA = []
+        marked_dRA_err = []
+        marked_dDEC = []
+        marked_dDEC_err = []
+        marked_channel = []
+        marked_velocity = []
+        marked_fluxes = []
+        marked_fluxes_err = []
+        
+        # we iterate in search of proper spots
+        for i in range(len(self.dRA)):
+            # proper condition of including this spot:
+            if (self.dRA[i] > ra_min and self.dRA[i] < ra_max) and (self.dDEC[i] > dec_min and self.dDEC[i] < dec_max):
+                # if condition is fulfilled, we append parameter to the tables
+                marked_dRA.append(self.dRA[i])
+                marked_dRA_err.append(self.dRA_error[i])
+                marked_dDEC.append(self.dDEC[i])
+                marked_dDEC_err.append(self.dDEC_error[i])
+                marked_channel.append(self.channel[i])
+                marked_velocity.append(self.velocity[i])
+                marked_fluxes.append(self.flux_density[i])
+                marked_fluxes_err.append(self.flux_density_error[i])
+        
+        return asarray(marked_channel), asarray(marked_velocity), asarray(marked_dRA), asarray(marked_dRA_err), asarray(marked_dDEC), asarray(marked_dDEC_err), asarray(marked_fluxes), asarray(marked_fluxes_err)
+
+    def calculate_cloudet_params(self, velocities, dRA, dRA_err, dDEC, dDEC_err, fluxes, fluxes_err):
+        # failsafe, if the dRA, dDEC and fluxes tables are not equal
+        if len(dRA) != len(dDEC) or len(dRA) != len(fluxes) or len(dDEC) != len(fluxes):
+            return 0.0, 0.0, 0.0
+        
+        # calculate the mean baricenter of the cloudet
+        center_dRA = average(dRA, weights=fluxes)
+        center_dDEC = average(dDEC, weights=fluxes)
+        center_flux = max(fluxes)
+        center_velocity = average(velocities, weights = fluxes)
+
+        # errors
+        center_dRA_err = average(dRA_err, weights = fluxes)
+        center_dDEC_err = average(dDEC_err, weights = fluxes)
+        center_flux_err = fluxes_err[fluxes.tolist().index(center_flux)]
+
+
+        return center_velocity, center_dRA, center_dRA_err, center_dDEC, center_dDEC_err, center_flux, center_flux_err
