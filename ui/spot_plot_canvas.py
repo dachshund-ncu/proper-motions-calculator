@@ -40,8 +40,6 @@ class mplSpotCanvas(FigureCanvasQTAgg):
 
         super(mplSpotCanvas, self).__init__(self.fig)
 
-        # -- connecting canvas to methods --
-        self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         # rectangle selector
         self.selector = RectangleSelector(self.axes, self.line_select_callback, drawtype='box', useblit=True, button=[1,3], minspanx=2, minspany=2, spancoords='pixels', interactive=True)
 

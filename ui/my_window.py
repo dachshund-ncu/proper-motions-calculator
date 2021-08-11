@@ -344,10 +344,16 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.spot_canvas.fig.canvas.draw_idle()
     
     def __beam_visible(self):
+        # -- connecting canvas to methods --
         if self.show_beam.isChecked() == False:
             self.spot_canvas.beam_ellipse.set_visible(False)
+            self.spot_canvas.fig.canvas.mpl_disconnect(self.kk)
         else:
             self.spot_canvas.beam_ellipse.set_visible(True)
+            self.kk = self.spot_canvas.fig.canvas.mpl_connect('button_press_event', self.spot_canvas.onclick)
+            if self.spot_canvas.selector.active:
+                self.spot_canvas.selector.set_active(False)
+                self.show_mark_range.setChecked(False)
         self.spot_canvas.fig.canvas.draw_idle()
 
     def __rectangle_visible(self):
@@ -355,6 +361,9 @@ class my_window_cl(QtWidgets.QMainWindow):
         if self.show_mark_range.isChecked() == False:
             self.spot_canvas.selector.set_active(False)
         else:
+            if self.show_beam.isChecked():
+                self.show_beam.setChecked(False)
+                self.__beam_visible()
             self.spot_canvas.selector.set_active(True)
 
         self.spot_canvas.fig.canvas.draw_idle()
