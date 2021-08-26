@@ -258,6 +258,7 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.set_as_origin_button.clicked.connect(self.__set_new_origin)
         self.unset_origin_button.clicked.connect(self.__unset_new_origin)
         self.add_to_cloudets_button.clicked.connect(self.__append_to_cloudet_list)
+        self.remove_from_cloudets_button.clicked.connect(self.__remove_from_saved_cloudets)
         # checkboxes
         self.show_beam.clicked.connect(self.__beam_visible)
         self.show_mark_range.clicked.connect(self.__rectangle_visible)
@@ -286,6 +287,8 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.list_of_spots_gb.setTitle("Spots of " + self.epochlst_obj.epochs[index].project_code)
         # filling list of spots
         self.__fill_list_of_spots(index)
+        # filling list of cloudets
+        self.__fill_list_of_cloudets(index)
 
     # ====== SLOTS ====== 
     def __plot_on_list_click(self):
@@ -309,6 +312,9 @@ class my_window_cl(QtWidgets.QMainWindow):
         self.list_of_spots_gb.setTitle("Spots of " + self.epochlst_obj.epochs[index].project_code)
         # filling list of spots
         self.__fill_list_of_spots(index)
+        # filling list of cloudets
+        self.__fill_list_of_cloudets(index)
+
         self.list_of_spots.setCurrentRow(0)
         # -- calling "mark" ---
         self.__mark_spot_on_click()
@@ -505,9 +511,21 @@ class my_window_cl(QtWidgets.QMainWindow):
         channels, velocities, dX, dX_err, dY, dY_err, flux, flux_err = self.epochlst_obj.epochs[self.chosen_project_index].get_spots_params_from_range(limits[0], limits[1], limits[2], limits[3])
         # getting cloudets
         cloudet_vel, cloudet_dRA, cloudet_dRA_err, cloudet_dDEC, cloudet_dDEC_err, cloudet_flux, cloudet_flux_err = self.epochlst_obj.epochs[self.chosen_project_index].calculate_cloudet_params(velocities, dX, dX_err, dY, dY_err, flux, flux_err)
-
         # adding to list of cloudets
         self.list_of_cloudets.addItem(QtWidgets.QListWidgetItem( "%.3f  %.3f  %.3f  %.3f" % (cloudet_vel, cloudet_flux, cloudet_dRA, cloudet_dDEC ) ) )
+        # adding to "cloudet" parameter of the "spots" class
+        self.epochlst_obj.epochs[self.chosen_project_index].add_to_cloudets(cloudet_vel, cloudet_flux, cloudet_dRA, cloudet_dRA_err, cloudet_dDEC, cloudet_dDEC_err, save=True)
+
+    def __remove_from_saved_cloudets(self):
+        # we need to get index of the chosen cloudet
+        index = self.list_of_cloudets.currentRow()
+
+        # and we call "remove_cloudet" method from spot class
+        self.epochlst_obj.epochs[self.chosen_project_index].remove_from_cloudets(index, save=True)
+
+        # we remove it from list
+        self.list_of_cloudets.removeItemWidget(self.list_of_cloudets.takeItem(index))
+
     # ====== HELPER PRIVATE METHOODS ====== 
     # -- this is just to avoid spaghetti --
     # calculates offsets to update the scatter plot
@@ -537,3 +555,18 @@ class my_window_cl(QtWidgets.QMainWindow):
         # - loop to fill it again -
         for i in range(len(self.epochlst_obj.epochs[index].flux_density)):
             self.list_of_spots.addItem(QtWidgets.QListWidgetItem ( "%d   %.2f   %.2f   %.2f" % (self.epochlst_obj.epochs[index].channel[i], self.epochlst_obj.epochs[index].flux_density[i], self.epochlst_obj.epochs[index].dRA[i], self.epochlst_obj.epochs[index].dDEC[i] ) ) )
+
+    def __fill_list_of_cloudets(self, index):
+        # - clear the previous list -
+        self.list_of_cloudets.clear()
+        # if there is no cloudets, do nothing
+        if self.epochlst_obj.epochs[index].cloudets_added == False:
+            return
+
+        # - loop to fill it actually -
+        for i in range(len(self.epochlst_obj.epochs[index].cloudets_VEL)):
+            cloudet_vel = self.epochlst_obj.epochs[index].cloudets_VEL[i]
+            cloudet_flux = self.epochlst_obj.epochs[index].cloudets_FLUX[i]
+            cloudet_dRA = self.epochlst_obj.epochs[index].cloudets_dRA[i]
+            cloudet_dDEC = self.epochlst_obj.epochs[index].cloudets_dDEC[i]
+            self.list_of_cloudets.addItem(QtWidgets.QListWidgetItem ( "%.3f  %.3f  %.3f  %.3f" % (cloudet_vel, cloudet_flux, cloudet_dRA, cloudet_dDEC ) ) )

@@ -3,7 +3,6 @@ This class creates simple plot canvas to display spot maps
 '''
 
 from classes.multiple_epochs import multiple_epochs_cl
-from PySide2 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 import matplotlib
@@ -17,6 +16,7 @@ matplotlib.use('Qt5Agg')
 class mplSpotCanvas(FigureCanvasQTAgg):
 
     def __init__(self, parent=None):# width=5, height=4, dpi=100):
+        
         self.fig = Figure()#(figsize=(width, height), dpi=dpi)
         
         self.gs = gridspec.GridSpec(1,2, width_ratios=[30,1], figure=self.fig)
@@ -134,7 +134,7 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         self.spot_marker_sc = self.axes.scatter(multiple_epochs_object.epochs[0].dRA[0], multiple_epochs_object.epochs[0].dDEC[0], c='black', s = log(multiple_epochs_object.epochs[0].flux_density[0] * 1000.0) **2.0 * 5, alpha=0.5, visible=False)
 
         # - grid -
-        self.axes.grid()
+        #self.axes.grid()
         # - making x_axis inverse -
         self.axes.invert_xaxis()
         # - adding ellipse and rectangle -
@@ -191,6 +191,10 @@ class mplSpotCanvas(FigureCanvasQTAgg):
         self.axes.yaxis.set_tick_params(direction='in', width=1, length = 3, which='minor', right=True)
 
         self.cbax.yaxis.set_tick_params(direction='in', width=1, length = 3)
+
+        self.axes.set_xlabel("$\Delta$RA$\,$")
+        self.axes.set_ylabel("$\Delta$DEC$\,$")
+        self.cbax.set_ylabel("Flux density$\,$")
     
     # -- methood - show beam where clicked --
     def onclick(self, event):

@@ -25,7 +25,7 @@ there is example file in the "examples" directory:
 '''
 
 # --- importing important libraries ---
-from numpy import loadtxt, cos, radians, asarray, average
+from numpy import loadtxt, cos, radians, asarray, average, array, append, delete
 from astropy.time import Time
 
 class maser_spots:
@@ -117,6 +117,7 @@ class maser_spots:
         self.jd = self.tee.jd
         self.mjd = self.tee.mjd
 
+        # ==== SHIFT ORIGIN ====
         # -- reading shifted part --
         projs_dir, raw_flnm = self.__find_root_directory()
 
@@ -126,19 +127,34 @@ class maser_spots:
             fle = open(projs_dir + 'shifted/' + 'new_origin_of_' + raw_flnm, 'r+')
             a = fle.readlines()
             fle.close()
+            # if the file read is ok, then code below will trigger
+            # getting shift values
+            tmp = a[1].split()
+            origin_shift_ra = float(tmp[0])
+            origin_shift_dec = float(tmp[1])
+            # shifting to shifted epoch
+            self.set_as_origin(origin_shift_ra, origin_shift_dec, save=False)
+            # ----------------------
+
         except:
             print("----> FOR FILE:", raw_flnm, "No shift information found!")
-            return # it will prevent from executing code below
-        
-        # ---------------------
-        # this code will be executed if "except" won't trigger
-        # getting shift values
-        tmp = a[1].split()
-        origin_shift_ra = float(tmp[0])
-        origin_shift_dec = float(tmp[1])
-        # shifting to shifted epoch
-        self.set_as_origin(origin_shift_ra, origin_shift_dec, save=False)
-        # ----------------------
+
+        # ==== CLOUDET TABLE ====
+        # try to read cloudet files
+        try:
+            # opening in "read" mode
+            d = loadtxt(projs_dir + 'cloudets/' + 'cloudets_of_' + raw_flnm)
+            self.cloudets_VEL = d[:,0]
+            self.cloudets_FLUX = d[:,1]
+            self.cloudets_dRA = d[:,2]
+            self.cloudets_dRA_err = d[:,3]
+            self.cloudets_dDEC = d[:,4]
+            self.cloudets_dDEC_err = d[:,5]
+            self.cloudets_added = True
+        except:
+            print("----> FOR FILE:", raw_flnm, "NO cloudets found!")
+            self.cloudets_added = False
+
 
     # -- setting the 0,0 point --
     def set_as_origin(self, spot_ra, spot_dec, save=True):
@@ -272,3 +288,66 @@ class maser_spots:
 
 
         return center_velocity, center_dRA, center_dRA_err, center_dDEC, center_dDEC_err, center_flux, center_flux_err
+    
+    def add_to_cloudets(self, c_vel, c_flux, c_dRA, c_dRA_err, c_DEC, c_DEC_err, save=False):
+        
+        # sprawdzamy, czy w ogóle nasza klasa ma takie tablice:
+        if self.cloudets_added == True:
+            self.cloudets_VEL = append(self.cloudets_VEL, c_vel)
+            self.cloudets_FLUX = append(self.cloudets_FLUX, c_flux)
+            self.cloudets_dRA = append(self.cloudets_dRA, c_dRA)
+            self.cloudets_dRA_err = append(self.cloudets_dRA_err, c_dRA_err)
+            self.cloudets_dDEC = append(self.cloudets_dDEC, c_DEC)
+            self.cloudets_dDEC_err = append(self.cloudets_dDEC_err, c_DEC_err)
+        else:   # jak nie to xD
+            self.cloudets_VEL = array([c_vel])
+            self.cloudets_FLUX = array([c_flux])
+            self.cloudets_dRA = array([c_dRA])
+            self.cloudets_dRA_err = array([c_dRA_err])
+            self.cloudets_dDEC = array([c_DEC])
+            self.cloudets_dDEC_err = array([c_DEC_err])
+            # ustawiamy odpowiedniego boola
+            self.cloudets_added = True
+        
+        # zapisujemy
+        if save == True:
+            # we need to find root directory
+            projs_dir, raw_flnm = self.__find_root_directory()
+
+            # we open proper file
+            # !!! file is destroyed every time save is called !!!
+            fle = open(projs_dir + 'cloudets/' + 'cloudets_of_' + raw_flnm, 'w+')
+            fle.write("# Vel    Flux    dRA  +/-    dDEC    +/-\n")
+            # we loop to save all of the cloudets again
+            for i in range(len(self.cloudets_VEL)):
+                fle.write("%f   %f  %f  %f  %f  %f\n" % (self.cloudets_VEL[i], self.cloudets_FLUX[i], self.cloudets_dRA[i], self.cloudets_dRA_err[i], self.cloudets_dDEC[i], self.cloudets_dDEC_err[i]))
+            # we close the file
+            fle.close()
+    
+    def remove_from_cloudets(self, index, save=False):
+        # simple failsafe
+        if self.cloudets_added == False:
+            return
+
+        # we remove the cloudet of no. index from tables
+        self.cloudets_VEL = delete(self.cloudets_VEL, index)
+        self.cloudets_FLUX = delete(self.cloudets_FLUX, index)
+        self.cloudets_dRA = delete(self.cloudets_dRA, index)
+        self.cloudets_dRA_err = delete(self.cloudets_dRA_err, index)
+        self.cloudets_dDEC = delete(self.cloudets_dDEC, index)
+        self.cloudets_dDEC_err = delete(self.cloudets_dDEC_err, index)
+        
+        # we save the new file
+        if save == True:
+            # we need to find root directory
+            projs_dir, raw_flnm = self.__find_root_directory()
+
+            # we open proper file
+            # !!! file is destroyed every time save is called !!!
+            fle = open(projs_dir + 'cloudets/' + 'cloudets_of_' + raw_flnm, 'w+')
+            fle.write("# Vel    Flux    dRA  +/-    dDEC    +/-\n")
+            # we loop to save all of the cloudets again
+            for i in range(len(self.cloudets_VEL)):
+                fle.write("%f   %f  %f  %f  %f  %f\n" % (self.cloudets_VEL[i], self.cloudets_FLUX[i], self.cloudets_dRA[i], self.cloudets_dRA_err[i], self.cloudets_dDEC[i], self.cloudets_dDEC_err[i]))
+            # we close the file
+            fle.close()
