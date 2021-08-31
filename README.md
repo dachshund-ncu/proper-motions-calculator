@@ -10,4 +10,4 @@ astropy
 pyside6
 
 also:
-sudo apt install libopengl0 -y
+libopengl0 -y
